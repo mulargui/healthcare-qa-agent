@@ -5,12 +5,20 @@ import asyncio
 
 import pytest
 
-from agent import run_agent
+import agent
 
 
 def ask(question):
     """Run the agent with a question and return the lowercase response."""
-    return asyncio.run(run_agent(question)).lower()
+    return asyncio.run(agent.run_agent(question)).lower()
+
+
+def ask_session(questions):
+    """Run multiple questions in a single session and return lowercase responses."""
+    async def _run():
+        async with agent.agent_session() as ask:
+            return [(await ask(q)).lower() for q in questions]
+    return asyncio.run(_run())
 
 
 class TestSymptomBasedDoctorRecommendation:
@@ -44,6 +52,9 @@ class TestDirectDoctorSearch:
         assert any(
             term in response for term in ["dr.", "dr ", "doctor", "md"]
         ), "Should list doctors"
+        assert any(
+            term in response for term in ["address", "street", "ave", "blvd", "rd", "wa 9"]
+        ), "Should include addresses"
 
 
 class TestGeneralHealthQuestion:
@@ -53,7 +64,9 @@ class TestGeneralHealthQuestion:
         response = ask("What's the difference between a cold and the flu?")
         assert "cold" in response, "Should mention cold"
         assert "flu" in response, "Should mention flu"
-        assert "searchdoctors" not in response, "Should not invoke doctor search"
+        assert not any(
+            term in response for term in ["dr.", "dr ", "md,"]
+        ), "Should not list specific doctors"
 
 
 class TestProactiveDoctorRecommendation:
@@ -71,14 +84,74 @@ class TestProactiveDoctorRecommendation:
         ), "Should recommend seeing a specialist"
 
 
-class TestNoFollowUpQuestions:
-    """Spec: docs/product spec.md > Acceptance Tests > No follow-up questions."""
+class TestFollowUpWithContextCarryover:
+    """Spec: docs/product spec.md > Acceptance Tests > Follow-up with context carryover."""
 
-    def test_second_invocation_is_independent(self):
+    def test_location_carries_over(self):
+        responses = ask_session([
+            "Find me a counselor in Redmond, WA",
+            "What about orthopedists?",
+        ])
+        assert "redmond" in responses[1], "Should use Redmond from prior turn"
+        assert any(
+            term in responses[1] for term in ["orthoped", "orthopedist"]
+        ), "Should mention orthopedists"
+
+
+class TestFollowUpReferencingPriorResults:
+    """Spec: docs/product spec.md > Acceptance Tests > Follow-up referencing prior results."""
+
+    def test_reference_prior_doctor_list(self):
+        responses = ask_session([
+            "Find me a counselor in Redmond, WA",
+            "Tell me more about the first doctor",
+        ])
+        assert any(
+            term in responses[1] for term in ["dr.", "dr ", "doctor", "md"]
+        ), "Should provide detail about a doctor from the previous list"
+        assert len(responses[1]) > 100, "Should include substantive detail"
+
+
+class TestNoContextLeaksAcrossSessions:
+    """Spec: docs/product spec.md > Acceptance Tests > No context leaks across sessions."""
+
+    def test_separate_sessions_are_independent(self):
         ask("Find me a counselor in Redmond, WA")
         second_response = ask("What about orthopedists?")
-        assert "redmond" not in second_response, "Should not reference prior location"
-        assert "counselor" not in second_response, "Should not reference prior specialty"
+        assert "redmond" not in second_response, "Should not reference prior session's location"
+        assert "counselor" not in second_response, "Should not reference prior session's specialty"
+
+
+class TestUserCorrectionUpdatesContext:
+    """Spec: docs/product spec.md > Acceptance Tests > User correction updates context."""
+
+    def test_correction_updates_location(self):
+        responses = ask_session([
+            "Find me a cardiologist in Seattle, WA",
+            "Actually I meant Tacoma, not Seattle",
+        ])
+        assert "tacoma" in responses[1], "Should use corrected location"
+        assert any(
+            term in responses[1] for term in ["cardiolog", "heart"]
+        ), "Should list cardiologists"
+
+
+class TestProgressiveSymptomDisclosure:
+    """Spec: docs/product spec.md > Acceptance Tests > Progressive symptom disclosure across turns."""
+
+    def test_accumulates_symptoms_across_turns(self):
+        responses = ask_session([
+            "I've been having bad headaches",
+            "Also I've been feeling dizzy lately",
+            "Who should I see? I'm in Seattle, WA.",
+        ])
+        assert any(
+            term in responses[2]
+            for term in ["headache", "head", "neurolog"]
+        ), "Should consider headaches from earlier turns, not just dizziness"
+        assert any(
+            term in responses[2] for term in ["dr.", "dr ", "doctor", "md"]
+        ), "Should list doctors"
 
 
 class TestResponseTime:
@@ -93,6 +166,17 @@ class TestResponseTime:
     )
     def test_response_time(self, question, max_seconds):
         start = time.time()
-        asyncio.run(run_agent(question))
+        asyncio.run(agent.run_agent(question))
         elapsed = time.time() - start
         assert elapsed < max_seconds, f"Response took {elapsed:.1f}s, expected under {max_seconds}s"
+
+    def test_follow_up_response_time(self):
+        async def _run():
+            async with agent.agent_session() as ask:
+                await ask("Find me a counselor in Redmond, WA")
+                start = time.time()
+                await ask("What about orthopedists?")
+                return time.time() - start
+
+        elapsed = asyncio.run(_run())
+        assert elapsed < 30, f"Follow-up took {elapsed:.1f}s, expected under 30s"

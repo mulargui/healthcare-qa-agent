@@ -20,34 +20,33 @@ if [ ${#missing[@]} -gt 0 ]; then
     exit 1
 fi
 
-# Validate question argument
-if [ $# -eq 0 ]; then
-    echo "Usage: run.sh \"your health question\""
-    exit 1
-fi
-
 # Build image and run tests if image doesn't exist
 if ! docker image inspect "$IMAGE_NAME" > /dev/null 2>&1; then
     echo "Building Docker image..."
     docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$PROJECT_DIR"
 
-    echo "Running tests..."
+    echo "Running tests (mocked)..."
+    docker run --rm \
+        --entrypoint pytest \
+        "$IMAGE_NAME" tests/ -v --mock-healthylinkx --mock-tavily --mock-bedrock
+fi
+
+# Run the agent — interactive mode (no args) or single-question mode (with args)
+echo "Running agent..."
+if [ $# -eq 0 ]; then
+    docker run --rm -it \
+        -e AWS_ACCESS_KEY_ID \
+        -e AWS_SECRET_ACCESS_KEY \
+        -e AWS_DEFAULT_REGION \
+        -e TAVILY_API_KEY \
+        -e HEALTHYLINKX_MCP_URL \
+        "$IMAGE_NAME"
+else
     docker run --rm \
         -e AWS_ACCESS_KEY_ID \
         -e AWS_SECRET_ACCESS_KEY \
         -e AWS_DEFAULT_REGION \
         -e TAVILY_API_KEY \
         -e HEALTHYLINKX_MCP_URL \
-        --entrypoint pytest \
-        "$IMAGE_NAME" tests/ -v
+        "$IMAGE_NAME" "$@"
 fi
-
-# Run the agent with the question
-echo "Running agent..."
-docker run --rm \
-    -e AWS_ACCESS_KEY_ID \
-    -e AWS_SECRET_ACCESS_KEY \
-    -e AWS_DEFAULT_REGION \
-    -e TAVILY_API_KEY \
-    -e HEALTHYLINKX_MCP_URL \
-    "$IMAGE_NAME" "$@"

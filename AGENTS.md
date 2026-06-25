@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-Healthcare Q&A Agent — a CLI tool that answers health questions and recommends doctors using Claude (AWS Bedrock), Tavily for web search, and the HealthyLinkx MCP server for doctor lookups.
+Healthcare Q&A Agent — an interactive CLI tool that answers health questions and recommends doctors through multi-turn conversations. Uses Claude (AWS Bedrock), Tavily for web search, and the HealthyLinkx MCP server for doctor lookups. Supports follow-up questions with context carryover (in-memory, session-scoped). Also supports single-question mode for backwards compatibility.
 
 ## Architecture
 
 - **CLI + Agent Core**: Python, LangChain, packaged in Docker
-- **LLM**: Claude via AWS Bedrock (Converse or InvokeModel API)
+- **LLM**: Claude via AWS Bedrock (Converse API, `ChatBedrockConverse`)
 - **Tools**:
   - `tavily_search` — Tavily MCP server (health questions and doctor background lookups)
   - `SearchDoctors` — HealthyLinkx MCP server (JavaScript, Lambda Function URL, queries RDS MySQL)
@@ -18,7 +18,10 @@ Healthcare Q&A Agent — a CLI tool that answers health questions and recommends
 - HealthyLinkx MCP server is external, deployed separately (Lambda Function URL)
 - Tavily MCP server for web search — purpose-built for LLM agents, clean structured results
 - Doctor summaries via `tavily_search` per doctor (no separate tool or pre-enriched database in v1)
-- Single question, single answer — no conversation history in v1
+- Interactive multi-turn conversations with in-memory conversation history (discarded on exit)
+- Context carryover is always-on — location, symptoms, and doctor lists carry forward unless the user corrects them
+- Conversation history via LangGraph's `MemorySaver` checkpointer (no truncation in v1 — known limitation)
+- Two CLI modes: interactive prompt loop (no argument) and single-question (with argument, backwards compatible)
 - Agent may proactively recommend doctors when clinically appropriate
 
 ## Repo Layout
@@ -36,9 +39,11 @@ agent/src/logging_config.py     Logging setup (format with filename and line num
 agent/tests/test_acceptance.py  Acceptance tests (from product spec)
 agent/tests/test_integration.py Integration tests (from architecture doc)
 agent/tests/test_unit.py        Unit tests (env var validation)
+agent/tests/conftest.py         Pytest config, mock fixtures
 infra/Dockerfile                Docker image for CLI + Agent Core
 infra/requirements.txt          Python dependencies
 infra/run.sh                    Build, test, and run script
+infra/test.sh                   Run tests with optional mock flags
 ```
 
 ## Reused Repositories
@@ -57,7 +62,7 @@ Components from https://github.com/mulargui are reused:
 - Agent code: Python
 - MCP server / Lambda / infrastructure: JavaScript
 - CLI and Agent Core are packaged together in a Docker container
-- No conversation history — each CLI invocation is independent
+- In-memory conversation history within a session; no persistence across sessions
 
 ## Key Docs
 

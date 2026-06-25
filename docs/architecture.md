@@ -10,15 +10,21 @@ Key repositories:
 ## High-Level Architecture
 
 ```
-┌─────────────────┐
-│   CLI (stdin)    │
-└────────┬────────┘
-         │ user question
+┌──────────────────────┐
+│   CLI (interactive)  │
+│   prompt loop or     │
+│   single-question    │
+└────────┬─────────────┘
+         │ user question + conversation history
          ▼
 ┌─────────────────┐       ┌─────────────────┐
 │   Agent Core    │◀────▶│  Claude (LLM)   │
 │  (orchestrator) │       │  AWS Bedrock    │
-└────────┬────────┘       └─────────────────┘
+│                 │       └─────────────────┘
+│  conversation   │
+│  history        │
+│  (in-memory)    │
+└────────┬────────┘
          │ executes tool calls
          ▼
 ┌───────────────────────┐  ┌───────────────────────────┐
@@ -32,20 +38,29 @@ Key repositories:
 
 ### 1. CLI Interface
 
-A command-line application that takes a user question as input and prints the agent's response.
+A command-line application that supports interactive multi-turn conversations and single-question mode.
 
-- Reads the user's question from stdin or command-line argument
-- Sends the question to the Agent Core
-- Prints the formatted response to stdout
-- No conversation history — each invocation is independent
+**Interactive mode** (no argument):
+- Displays a welcome message explaining what the agent does and how to exit
+- Runs a prompt loop with `> ` indicator
+- Reads user input, sends it to the Agent Core, prints the response, and repeats
+- Exits on "exit", "quit", Ctrl+C, or EOF
+- Ignores empty input (re-displays the prompt)
+
+**Single-question mode** (with argument):
+- `./infra/run.sh "question"` — sends the question, prints the answer, and exits
+- Backwards compatible with previous behavior
+
 - Packaged with the Agent Core in a Docker container for easy deployment
 
 ### 2. Agent Core (Orchestrator)
 
-Sends the user's question to Claude on AWS Bedrock. All tools are accessed via MCP, keeping the orchestrator simple — it is just an MCP client.
+Sends the user's question and conversation history to Claude on AWS Bedrock. All tools are accessed via MCP, keeping the orchestrator simple — it is just an MCP client.
 
+- Conversation history managed by LangGraph's `MemorySaver` checkpointer — accumulates messages automatically across turns within a session
+- History is discarded when the session ends — no persistence to disk
 - Constructs the system prompt with health Q&A guidelines
-- Calls Claude via the AWS Bedrock Converse or InvokeModel API
+- Calls Claude via the AWS Bedrock Converse API (`ChatBedrockConverse`)
 - Connects to MCP servers for all tools:
   - HealthyLinkx MCP server for `SearchDoctors`
   - Tavily MCP server for `tavily_search` (health questions and doctor background lookups)
@@ -57,13 +72,14 @@ Sends the user's question to Claude on AWS Bedrock. All tools are accessed via M
 
 Claude handles reasoning: understanding the user's question, deciding which tools to invoke, interpreting results, and composing the final answer.
 
-- Model: Claude (latest available on Bedrock — currently Claude 4 Sonnet or similar)
+- Model: `us.anthropic.claude-sonnet-4-5-20250929-v1:0` (Bedrock cross-region inference)
 - System prompt instructs Claude to:
   - Answer health questions using its knowledge and web search
   - Determine the appropriate specialist type from symptoms
   - Search for doctors when a location is provided or the question warrants it
   - Summarize each recommended doctor's background
   - Be proactive about recommending doctors when clinically appropriate
+  - Use context from prior conversation turns without asking the user to repeat themselves
 
 ### 4. Tools
 
@@ -107,6 +123,7 @@ infra/
   Dockerfile               Docker image for CLI + Agent Core
   requirements.txt         Python dependencies
   run.sh                   Build, test, and run script
+  test.sh                  Run tests with optional mock flags
 ```
 
 The MCP servers are external to this repo — HealthyLinkx is deployed from its own repo, Tavily is a third-party package. The agent only needs their connection configuration.
@@ -140,7 +157,7 @@ Both MCP servers are external to this repo and assumed to be already deployed. T
 
 | Component | Technology |
 |-----------|-----------|
-| CLI | Python (argparse or similar) |
+| CLI | Python (sys.argv) |
 | Agent Core | Python, LangChain |
 | Client container | Docker (CLI + Agent Core) |
 | LLM | Claude via AWS Bedrock |
@@ -149,20 +166,57 @@ Both MCP servers are external to this repo and assumed to be already deployed. T
 
 ## Data Flow
 
-1. User enters a question via the CLI
-2. Agent Core sends the question to Claude on Bedrock with the system prompt and tool definitions
-3. Claude analyzes the question and decides which tools to call (if any)
-4. For health questions: Claude calls `tavily_search` → receives results → incorporates into answer
-5. For doctor searches: Claude calls `SearchDoctors` with zipcode and specialty → receives doctor list
-6. For doctor backgrounds: Claude calls `tavily_search` for each recommended doctor → receives background info
-7. Claude composes a final response combining health information, doctor recommendations, and summaries
-8. Agent Core prints the response to stdout
+**Interactive mode:**
+1. CLI displays welcome message and `> ` prompt
+2. User enters a question
+3. CLI sends the question to the Agent Core
+4. Agent Core sends the user message to Claude on Bedrock with the system prompt, tool definitions, and conversation history (managed automatically by LangGraph's `MemorySaver` checkpointer)
+5. Claude analyzes the question (with context from prior turns) and decides which tools to call (if any)
+6. For health questions: Claude calls `tavily_search` → receives results → incorporates into answer
+7. For doctor searches: Claude calls `SearchDoctors` with zipcode and specialty → receives doctor list
+8. For doctor backgrounds: Claude calls `tavily_search` for each recommended doctor → receives background info
+9. Claude composes a final response combining health information, doctor recommendations, and summaries
+10. Agent Core returns the response to the CLI, which prints it to stdout
+11. CLI displays `> ` prompt again — repeat from step 2 until the user exits
+
+**Single-question mode:**
+- Steps 4–10 execute once, then the process exits
 
 ## Technical Decisions Log
 
 1. **Web search provider** — Tavily MCP server. Purpose-built for LLM agents, clean structured results. All tools accessed uniformly via MCP.
 2. **Doctor summary source** — Claude uses `tavily_search` to look up each doctor's background. No separate tool needed. Avoids building a data enrichment pipeline for v1; pre-enriched database can be revisited if latency becomes a concern.
 3. **Doctor search** — HealthyLinkx MCP server (Lambda Function URL), deployed and managed separately from this repo.
+4. **Conversation history** — in-memory via LangGraph's `MemorySaver` checkpointer. No persistence to disk. **Known limitation:** conversation history is not truncated — very long sessions may exceed Bedrock's context window and fail. LangGraph supports truncation via `trim_messages` + `pre_model_hook` on `create_react_agent`, but this is not wired up in v1. For typical CLI usage (under ~20 turns) this is unlikely to be an issue.
+5. **CLI modes** — interactive prompt loop (no argument) and single-question mode (with argument). Single-question mode preserves backwards compatibility with previous scripts and automation.
+
+## Test Mocking
+
+Tests depend on three external services: HealthyLinkx MCP server, Tavily MCP server, and AWS Bedrock. Each can be independently mocked via pytest flags:
+
+| Flag | Effect |
+|------|--------|
+| `--mock-healthylinkx` | Mock the HealthyLinkx MCP server |
+| `--mock-tavily` | Mock the Tavily MCP server |
+| `--mock-bedrock` | Mock the AWS Bedrock LLM |
+
+No flags = all live (requires credentials). Any combination works. All three = fully local.
+
+**How mocking works by test type:**
+
+- **Acceptance tests** — when any mock flag is set, `agent_session` and `run_agent` are patched with canned responses. The mock tracks conversation history within a session for multi-turn tests.
+- **Integration tests** — skipped when their service is mocked. Mocking a connectivity test defeats its purpose. Session-level integration tests skip when any flag is set.
+- **Unit tests** — unaffected by mock flags. They test env var validation and never reach external services.
+
+**Running tests:**
+
+```bash
+./infra/test.sh --mock-healthylinkx --mock-tavily --mock-bedrock  # fully mocked
+./infra/test.sh --mock-healthylinkx --mock-tavily                 # mock MCP, live Bedrock
+./infra/test.sh                                                   # all live
+```
+
+`run.sh` runs tests with all mocks on image build to validate the container without credentials.
 
 ## System and Integration Tests
 
@@ -180,4 +234,14 @@ Both MCP servers are external to this repo and assumed to be already deployed. T
 - **Given** the Agent Core is running with a valid Tavily API key and the Tavily MCP server is configured
 - **When** the `tavily_search` tool is called with a health-related query via MCP
 - **Then** the Tavily MCP server returns structured search results
+
+### Conversation history is sent to Bedrock across turns
+- **Given** the Agent Core has processed at least one prior turn
+- **When** a follow-up question is sent to Claude via Bedrock
+- **Then** the request includes the full conversation history and Claude's response reflects prior context
+
+### Conversation history is not persisted to disk
+- **Given** the Agent Core has processed a multi-turn conversation
+- **When** the session ends
+- **Then** no conversation history is written to disk — a new session starts with empty history
 
