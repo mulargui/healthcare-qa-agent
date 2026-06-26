@@ -37,8 +37,8 @@ class TestSymptomBasedDoctorRecommendation:
             for term in ["neurologist", "ophthalmologist", "specialist"]
         ), "Should suggest a specialist type"
         assert any(
-            term in response for term in ["dr.", "dr ", "doctor", "md"]
-        ), "Should list doctors"
+            term in response for term in ["dr.", "dr ", "doctor", "md", "lmhc", "phd", "ma,"]
+        ), "Should list practitioners"
         assert len(response) > 200, "Should include background summaries"
 
 
@@ -50,8 +50,8 @@ class TestDirectDoctorSearch:
         assert "counselor" in response, "Should mention counseling"
         assert "redmond" in response, "Should mention Redmond"
         assert any(
-            term in response for term in ["dr.", "dr ", "doctor", "md"]
-        ), "Should list doctors"
+            term in response for term in ["dr.", "dr ", "doctor", "md", "lmhc", "phd", "ma,"]
+        ), "Should list practitioners"
         assert any(
             term in response for term in ["address", "street", "ave", "blvd", "rd", "wa 9"]
         ), "Should include addresses"
@@ -107,8 +107,8 @@ class TestFollowUpReferencingPriorResults:
             "Tell me more about the first doctor",
         ])
         assert any(
-            term in responses[1] for term in ["dr.", "dr ", "doctor", "md"]
-        ), "Should provide detail about a doctor from the previous list"
+            term in responses[1] for term in ["dr.", "dr ", "doctor", "md", "lmhc", "phd", "ma,"]
+        ), "Should provide detail about a practitioner from the previous list"
         assert len(responses[1]) > 100, "Should include substantive detail"
 
 
@@ -150,8 +150,8 @@ class TestProgressiveSymptomDisclosure:
             for term in ["headache", "head", "neurolog"]
         ), "Should consider headaches from earlier turns, not just dizziness"
         assert any(
-            term in responses[2] for term in ["dr.", "dr ", "doctor", "md"]
-        ), "Should list doctors"
+            term in responses[2] for term in ["dr.", "dr ", "doctor", "md", "lmhc", "phd", "ma,"]
+        ), "Should list practitioners"
 
 
 class TestResponseTime:

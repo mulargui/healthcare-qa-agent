@@ -29,8 +29,12 @@ def _validate_env():
 
 
 @asynccontextmanager
-async def agent_session():
+async def agent_session(tools_override=None, llm_override=None):
     """Create a session that maintains conversation history across turns.
+
+    Args:
+        tools_override: Optional list of LangChain tools to use instead of MCP tools.
+        llm_override: Optional LLM instance to use instead of Bedrock.
 
     Usage:
         async with agent_session() as ask:
@@ -38,32 +42,40 @@ async def agent_session():
             answer2 = await ask("What about neurologists?")  # remembers Seattle
     """
     healthylinkx_url, tavily_api_key = _validate_env()
-    tavily_url = f"https://mcp.tavily.com/mcp/?tavilyApiKey={tavily_api_key}"
 
-    logger.info("Connecting to MCP servers")
-    logger.info("HealthyLinkx MCP: %s", healthylinkx_url)
-    logger.info("Tavily MCP: %s", "https://mcp.tavily.com/mcp/")
+    if tools_override is not None:
+        tools = tools_override
+        logger.info("Using %d overridden tools", len(tools))
+    else:
+        tavily_url = f"https://mcp.tavily.com/mcp/?tavilyApiKey={tavily_api_key}"
 
-    client = MultiServerMCPClient(
-        {
-            "healthylinkx": {
-                "url": healthylinkx_url,
-                "transport": "streamable_http",
-            },
-            "tavily": {
-                "url": tavily_url,
-                "transport": "streamable_http",
-            },
-        }
-    )
+        logger.info("Connecting to MCP servers")
+        logger.info("HealthyLinkx MCP: %s", healthylinkx_url)
+        logger.info("Tavily MCP: %s", "https://mcp.tavily.com/mcp/")
 
-    tools = await client.get_tools()
-    logger.info("Loaded %d tools from MCP servers", len(tools))
+        client = MultiServerMCPClient(
+            {
+                "healthylinkx": {
+                    "url": healthylinkx_url,
+                    "transport": "streamable_http",
+                },
+                "tavily": {
+                    "url": tavily_url,
+                    "transport": "streamable_http",
+                },
+            }
+        )
 
-    region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
-    logger.info("Creating LLM: %s in %s", BEDROCK_MODEL_ID, region)
+        tools = await client.get_tools()
+        logger.info("Loaded %d tools from MCP servers", len(tools))
 
-    llm = ChatBedrockConverse(model=BEDROCK_MODEL_ID, region_name=region)
+    if llm_override is not None:
+        llm = llm_override
+        logger.info("Using overridden LLM")
+    else:
+        region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+        logger.info("Creating LLM: %s in %s", BEDROCK_MODEL_ID, region)
+        llm = ChatBedrockConverse(model=BEDROCK_MODEL_ID, region_name=region)
 
     checkpointer = MemorySaver()
     agent = create_react_agent(llm, tools, prompt=SYSTEM_PROMPT, checkpointer=checkpointer)

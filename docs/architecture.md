@@ -204,7 +204,10 @@ No flags = all live (requires credentials). Any combination works. All three = f
 
 **How mocking works by test type:**
 
-- **Acceptance tests** — when any mock flag is set, `agent_session` and `run_agent` are patched with canned responses. The mock tracks conversation history within a session for multi-turn tests.
+- **Acceptance tests** — three tiers based on which flags are set:
+  - All three flags: `agent_session`/`run_agent` replaced with canned responses (fast, no external calls). The mock tracks conversation history for multi-turn tests.
+  - Partial MCP mock with live Bedrock (e.g. `--mock-healthylinkx --mock-tavily`): mock tools injected into the real `agent_session` via `tools_override`. The real LLM orchestrates with mock tool data.
+  - Only Bedrock mocked: acceptance tests skip (a fake LLM can't intelligently call real MCP tools).
 - **Integration tests** — skipped when their service is mocked. Mocking a connectivity test defeats its purpose. Session-level integration tests skip when any flag is set.
 - **Unit tests** — unaffected by mock flags. They test env var validation and never reach external services.
 
