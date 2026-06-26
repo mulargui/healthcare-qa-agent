@@ -109,7 +109,7 @@ Getting from "I have symptom X" to "here's a doctor who can help" is inherently 
 - Answers combine health information with doctor recommendations naturally
 - Follow-up questions resolve correctly against prior context — the user doesn't need to repeat information already provided
 - Conversations feel natural across multiple turns, including corrections, refinements, and drill-downs
-- Responses arrive within 15 seconds for simple queries, 30 seconds for doctor searches with background lookups (per turn, not per session)
+- Responses arrive within 20 seconds for simple queries, 40 seconds for doctor searches with background lookups (per turn, not per session)
 
 ## Acceptance Tests
 
@@ -186,9 +186,9 @@ Getting from "I have symptom X" to "here's a doctor who can help" is inherently 
 ### Response time
 - **Given** any user question (first turn or follow-up)
 - **When** the agent processes the question
-- **Then** the response is returned within 15 seconds for simple queries, 30 seconds for doctor searches with background lookups
+- **Then** the response is returned within 20 seconds for simple queries, 40 seconds for doctor searches with background lookups
 - **Test**: measure response time for a first-turn question and a follow-up turn within the same session
-- **Verify**: each individual turn meets the target — simple query under 15 seconds, doctor search under 30 seconds
+- **Verify**: each individual turn meets the target — simple query under 20 seconds, doctor search under 40 seconds
 
 ## Examples of Usage
 

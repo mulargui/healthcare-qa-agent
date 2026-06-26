@@ -69,7 +69,7 @@ def mock_env_vars(request, monkeypatch):
 MOCK_DOCTORS = [
     {"Name": "Dr. Sarah Johnson, MD", "Address": "1234 Medical Ave", "City": "Seattle", "Classification": "Neurology"},
     {"Name": "Dr. Michael Chen, MD", "Address": "5678 Vision Blvd", "City": "Seattle", "Classification": "Ophthalmology"},
-    {"Name": "Tana Anderson, MA, LMHC", "Address": "15600 Redmond Way, Suite 101", "City": "Redmond", "Classification": "Counselor"},
+    {"Name": "Tana Anderson, MA, LMHC", "Address": "15600 Redmond Ave, Suite 101", "City": "Redmond", "Classification": "Counselor"},
     {"Name": "Dr. Robert Kim, MD", "Address": "300 Bone St", "City": "Redmond", "Classification": "Orthopedist"},
     {"Name": "Dr. Lisa Martinez, MD", "Address": "400 Heart Rd", "City": "Seattle", "Classification": "Cardiology"},
     {"Name": "Dr. David Brown, MD", "Address": "500 Cardiac Ave", "City": "Tacoma", "Classification": "Cardiology"},
@@ -142,7 +142,7 @@ CANNED_RESPONSES = {
     "counselor in redmond": (
         "Here are counselors in the Redmond, WA area from the HealthyLinkx directory:\n\n"
         "1. Tana Anderson, MA, LMHC - Counselor\n"
-        "   Address: 15600 Redmond Way, Suite 101, Redmond, WA 98052\n"
+        "   Address: 15600 Redmond Ave, Suite 101, Redmond, WA 98052\n"
         "   Tana specializes in cognitive behavioral therapy with 10 years of experience.\n\n"
         "2. Dr. James Park, MD - Counselor\n"
         "   Address: 200 Oak Ave, Redmond, WA 98053\n"

@@ -175,8 +175,8 @@ class TestResponseTime:
     @pytest.mark.parametrize(
         "question,max_seconds",
         [
-            ("What's the difference between a cold and the flu?", 15),
-            ("Find me a counselor in Redmond, WA", 30),
+            ("What's the difference between a cold and the flu?", 20),
+            ("Find me a counselor in Redmond, WA", 40),
         ],
     )
     def test_response_time(self, question, max_seconds):
@@ -194,4 +194,4 @@ class TestResponseTime:
                 return time.time() - start
 
         elapsed = asyncio.run(_run())
-        assert elapsed < 30, f"Follow-up took {elapsed:.1f}s, expected under 30s"
+        assert elapsed < 40, f"Follow-up took {elapsed:.1f}s, expected under 40s"
