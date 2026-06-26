@@ -176,6 +176,13 @@ Getting from "I have symptom X" to "here's a doctor who can help" is inherently 
 - **Test**: in the same session, ask `"I've been having bad headaches"`, then `"Also I've been feeling dizzy lately"`, then `"Who should I see? I'm in Seattle, WA."`
 - **Verify**: response recommends a specialist appropriate for the combined symptom picture (headaches + dizziness), not just dizziness alone
 
+### Clarifying question for vague symptoms
+- **Given** a user describes symptoms vaguely without enough detail to determine a condition or specialist
+- **When** the agent processes the question
+- **Then** the response asks a clarifying question about the symptoms rather than guessing a specialist
+- **Test**: `"I don't feel well."`
+- **Verify**: response asks a follow-up question (contains "?") and does not list specific doctors
+
 ### Response time
 - **Given** any user question (first turn or follow-up)
 - **When** the agent processes the question

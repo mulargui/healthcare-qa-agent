@@ -25,7 +25,7 @@ Examples:
   ./infra/test.sh                                                  # All live (requires credentials)
   ./infra/test.sh --mock-healthylinkx --mock-tavily --mock-bedrock # All mocked (no credentials needed)
   ./infra/test.sh --mock-healthylinkx --mock-tavily                # Mock MCP, live Bedrock
-  ./infra/test.sh --mock-bedrock                                   # Mock Bedrock, live MCP
+  ./infra/test.sh --mock-bedrock                                   # Mock Bedrock, only integration tests will run (requires credentials for MCP)
 EOF
     exit 0
 }

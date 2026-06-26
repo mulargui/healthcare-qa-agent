@@ -55,6 +55,7 @@ class TestDirectDoctorSearch:
         assert any(
             term in response for term in ["address", "street", "ave", "blvd", "rd", "wa 9"]
         ), "Should include addresses"
+        assert len(response) > 200, "Should include background info"
 
 
 class TestGeneralHealthQuestion:
@@ -82,6 +83,9 @@ class TestProactiveDoctorRecommendation:
             term in response
             for term in ["cardiologist", "specialist", "doctor", "emergency", "er"]
         ), "Should recommend seeing a specialist"
+        assert any(
+            term in response for term in ["location", "area", "where", "city", "zip"]
+        ), "Should offer to search if a location is provided"
 
 
 class TestFollowUpWithContextCarryover:
@@ -152,6 +156,17 @@ class TestProgressiveSymptomDisclosure:
         assert any(
             term in responses[2] for term in ["dr.", "dr ", "doctor", "md", "lmhc", "phd", "ma,"]
         ), "Should list practitioners"
+
+
+class TestClarifyingQuestionForVagueSymptoms:
+    """Spec: docs/product spec.md > Acceptance Tests > Clarifying question for vague symptoms."""
+
+    def test_vague_symptoms_trigger_clarifying_question(self):
+        response = ask("I don't feel well.")
+        assert "?" in response, "Should ask a clarifying question"
+        assert not any(
+            term in response for term in ["dr.", "dr ", "md,"]
+        ), "Should not list specific doctors"
 
 
 class TestResponseTime:

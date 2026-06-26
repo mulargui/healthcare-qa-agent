@@ -197,6 +197,11 @@ CANNED_RESPONSES = {
         "This information is for educational purposes only and is not a substitute for "
         "professional medical advice. Please consult a healthcare provider for diagnosis and treatment."
     ),
+    "i don't feel well": (
+        "I'm sorry to hear you're not feeling well. Could you describe your symptoms in more "
+        "detail? For example, are you experiencing any pain, fatigue, nausea, fever, or other "
+        "specific symptoms? This will help me provide more relevant information and guidance."
+    ),
     "bad headaches": (
         "Headaches can have many causes including tension, migraines, dehydration, or stress. "
         "If they are recurring or severe, it's worth discussing with a healthcare provider.\n\n"
@@ -265,11 +270,35 @@ async def _mock_agent_session():
 # Partial mock: wrap real agent_session with tool overrides
 # ---------------------------------------------------------------------------
 
-def _make_partial_mock_session(mock_tools, real_agent_session):
-    """Create an agent_session wrapper that injects mock tools for mocked servers."""
+def _build_live_mcp_config(request):
+    """Build MCP client config for non-mocked servers only."""
+    import os
+    config = {}
+    if not is_mock_healthylinkx(request):
+        config["healthylinkx"] = {
+            "url": os.environ["HEALTHYLINKX_MCP_URL"],
+            "transport": "streamable_http",
+        }
+    if not is_mock_tavily(request):
+        tavily_api_key = os.environ["TAVILY_API_KEY"]
+        config["tavily"] = {
+            "url": f"https://mcp.tavily.com/mcp/?tavilyApiKey={tavily_api_key}",
+            "transport": "streamable_http",
+        }
+    return config
+
+
+def _make_partial_mock_session(mock_tools, live_mcp_config, real_agent_session):
+    """Create an agent_session wrapper that combines live MCP tools with mock tools."""
     @asynccontextmanager
     async def _patched_session(tools_override=None, llm_override=None):
-        async with real_agent_session(tools_override=mock_tools, llm_override=llm_override) as ask:
+        combined_tools = list(mock_tools)
+        if live_mcp_config:
+            from langchain_mcp_adapters.client import MultiServerMCPClient
+            client = MultiServerMCPClient(live_mcp_config)
+            live_tools = await client.get_tools()
+            combined_tools.extend(live_tools)
+        async with real_agent_session(tools_override=combined_tools, llm_override=llm_override) as ask:
             yield ask
     return _patched_session
 
@@ -310,15 +339,16 @@ def mock_agent_session(request):
             yield
         return
 
-    # Tier 3: only bedrock mocked — can't run acceptance tests
-    if is_only_bedrock_mocked(request):
-        pytest.skip("Acceptance tests require a live LLM when MCP servers are not mocked")
+    # Tier 3: bedrock mocked (but not all three) — can't run acceptance tests
+    if is_mock_bedrock(request):
+        pytest.skip("Acceptance tests require a live LLM unless all services are mocked")
         return
 
     # Tier 2: partial MCP mock with live Bedrock
     mock_tools = _get_mock_tools(request)
+    live_mcp_config = _build_live_mcp_config(request)
     real_session = agent_module.agent_session
-    patched_session = _make_partial_mock_session(mock_tools, real_session)
+    patched_session = _make_partial_mock_session(mock_tools, live_mcp_config, real_session)
 
     with patch.object(agent_module, "agent_session", patched_session):
         yield
