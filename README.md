@@ -55,7 +55,8 @@ export HEALTHYLINKX_MCP_URL=...
 ```
 agent/src/          CLI entry point, agent core, system prompt
 agent/tests/        Acceptance, integration, and unit tests
-infra/              Dockerfile, requirements.txt, run and test scripts
+agent/eval/         Quality evals (heuristic + LLM-as-judge scoring)
+infra/              Dockerfile, requirements.txt, run, test, and eval scripts
 docs/               Product spec and architecture documents
 ```
 
@@ -70,6 +71,16 @@ docs/               Product spec and architecture documents
 
 # See all options
 ./infra/test.sh --help
+```
+
+## Evals
+
+```bash
+# Mock MCP, live Bedrock + judge
+./infra/eval.sh --mock-healthylinkx --mock-tavily
+
+# All live
+./infra/eval.sh
 ```
 
 ## Existing Work

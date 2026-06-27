@@ -40,22 +40,22 @@ agent/tests/test_acceptance.py  Acceptance tests (from product spec)
 agent/tests/test_integration.py Integration tests (from architecture doc)
 agent/tests/test_unit.py        Unit tests (env var validation)
 agent/tests/conftest.py         Pytest config, mock fixtures
+agent/eval/eval_cases.py        Eval case definitions (quality probes)
+agent/eval/eval_scoring.py      Heuristic scoring functions
+agent/eval/eval_judge.py        LLM-as-judge scoring logic
+agent/eval/run_evals.py         Eval runner (pytest entry point)
+agent/eval/conftest.py          Eval pytest config and mock setup
 infra/Dockerfile                Docker image for CLI + Agent Core
 infra/requirements.txt          Python dependencies
 infra/run.sh                    Build, test, and run script
 infra/test.sh                   Run tests with optional mock flags
+infra/eval.sh                   Run evals with optional mock flags
 ```
 
 ## Reused Repositories
 
 Components from https://github.com/mulargui are reused:
 - **healthylinkx-mcp-server** — MCP server for doctor search (primary reuse target)
-- **healthylinkx-chat-app** — Bedrock + tool use integration pattern
-- **healthylinkx-chat-mcp** — MCP client integration pattern
-- **healthylinkx-serverless-node** — datastore schema and seed data
-- **healthylinkx-a2a-server** — A2A protocol interface to HealthyLinkx
-- **healthylinkx-cdk** — AWS CDK infrastructure reference
-- **bedrock-chat-app** — Bedrock configuration patterns
 
 ## Coding Conventions
 

@@ -119,11 +119,18 @@ agent/
     test_acceptance.py     Acceptance tests (from product spec)
     test_integration.py    Integration tests (from architecture doc)
     test_unit.py           Unit tests (env var validation)
+  eval/
+    eval_cases.py          Eval case definitions (quality probes)
+    eval_scoring.py        Heuristic scoring functions
+    eval_judge.py          LLM-as-judge scoring logic
+    run_evals.py           Eval runner (pytest entry point)
+    conftest.py            Eval pytest config and mock setup
 infra/
   Dockerfile               Docker image for CLI + Agent Core
   requirements.txt         Python dependencies
   run.sh                   Build, test, and run script
   test.sh                  Run tests with optional mock flags
+  eval.sh                  Run evals with optional mock flags
 ```
 
 The MCP servers are external to this repo — HealthyLinkx is deployed from its own repo, Tavily is a third-party package. The agent only needs their connection configuration.
@@ -220,6 +227,29 @@ No flags = all live (requires credentials). Any combination works. All three = f
 ```
 
 `run.sh` runs tests with all mocks on image build to validate the container without credentials.
+
+## Evals
+
+Evals score response quality beyond binary pass/fail. They run the agent with controlled input (mock MCP tools) and score output using heuristic checks plus an LLM-as-judge.
+
+**Components:**
+- **Eval cases** (`eval_cases.py`) — ~10 cases probing empathy, nuance, accuracy, safety, guideline adherence, and completeness
+- **Heuristic scoring** (`eval_scoring.py`) — deterministic checks: disclaimer present, expected keywords, response length, response time, no diagnosis claims
+- **LLM-as-judge** (`eval_judge.py`) — a separate Claude model (Opus) scores each response on case-specific dimensions (1–5 scale with justification)
+- **Combined score** — 20% heuristic + 80% judge, on a 1–5 scale
+
+**Models:**
+- Eval model: `BEDROCK_MODEL_ID` from `agent.py` (the model being evaluated)
+- Judge model: `JUDGE_MODEL_ID` in `eval_judge.py` (a different model to avoid self-judging)
+
+**Running evals:**
+
+```bash
+./infra/eval.sh --mock-healthylinkx --mock-tavily   # mock MCP, live Bedrock + judge
+./infra/eval.sh                                      # all live
+```
+
+**Output:** console summary table + `eval_results.json` with per-case scores, response text, and judge justifications. Compare runs by diffing JSON output files.
 
 ## System and Integration Tests
 

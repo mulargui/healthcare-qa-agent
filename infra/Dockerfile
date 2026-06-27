@@ -7,5 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY agent/src/ src/
 COPY agent/tests/ tests/
+COPY agent/eval/ eval/
 
 ENTRYPOINT ["python", "src/main.py"]
