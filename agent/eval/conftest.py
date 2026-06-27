@@ -1,4 +1,4 @@
-"""Pytest configuration for evals — adds src/ and tests/ to path, reuses mock tools."""
+"""Pytest configuration for evals — adds src/ and tests/ to path, provides mock tools."""
 
 import sys
 import os
@@ -10,7 +10,7 @@ from langchain_core.tools import tool
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "tests"))
 
-from conftest import MOCK_DOCTORS, MOCK_SEARCH_RESULTS
+from mock_data import MOCK_DOCTORS, MOCK_SEARCH_RESULTS
 
 
 def pytest_addoption(parser):

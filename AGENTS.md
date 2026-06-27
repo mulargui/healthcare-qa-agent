@@ -27,29 +27,11 @@ Healthcare Q&A Agent — an interactive CLI tool that answers health questions a
 ## Repo Layout
 
 ```
-CLAUDE.md                  Points here
-AGENTS.md                  Project context for AI agents
-README.md                  Project overview and quick start
-docs/product spec.md       Product requirements, scope, acceptance tests
-docs/architecture.md       Components, deployment, tech stack, integration tests
-agent/src/main.py               CLI entry point
-agent/src/agent.py              Agent Core (LangChain orchestrator, MCP client)
-agent/src/prompts.py            System prompt
-agent/src/logging_config.py     Logging setup (format with filename and line number)
-agent/tests/test_acceptance.py  Acceptance tests (from product spec)
-agent/tests/test_integration.py Integration tests (from architecture doc)
-agent/tests/test_unit.py        Unit tests (env var validation)
-agent/tests/conftest.py         Pytest config, mock fixtures
-agent/eval/eval_cases.py        Eval case definitions (quality probes)
-agent/eval/eval_scoring.py      Heuristic scoring functions
-agent/eval/eval_judge.py        LLM-as-judge scoring logic
-agent/eval/run_evals.py         Eval runner (pytest entry point)
-agent/eval/conftest.py          Eval pytest config and mock setup
-infra/Dockerfile                Docker image for CLI + Agent Core
-infra/requirements.txt          Python dependencies
-infra/run.sh                    Build, test, and run script
-infra/test.sh                   Run tests with optional mock flags
-infra/eval.sh                   Run evals with optional mock flags
+docs/                  Product spec and architecture documents
+agent/src/             CLI entry point, agent core (agent.py), system prompt
+agent/tests/           Acceptance, integration, and unit tests; shared mock data
+agent/eval/            Quality evals (heuristic + LLM-as-judge scoring)
+infra/                 Dockerfile, requirements, run/test/eval scripts
 ```
 
 ## Reused Repositories

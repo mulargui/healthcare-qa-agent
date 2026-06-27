@@ -103,34 +103,11 @@ Searches the HealthyLinkx directory for doctors matching specialty and location.
 ## File Structure
 
 ```
-CLAUDE.md                  Points to AGENTS.md
-AGENTS.md                  Project context for AI agents
-README.md                  Project overview and quick start
-docs/
-  product spec.md          Product requirements, scope, acceptance tests
-  architecture.md          Components, deployment, tech stack, integration tests
-agent/
-  src/
-    main.py                CLI entry point
-    agent.py               Agent Core (LangChain orchestrator, MCP client)
-    prompts.py             System prompt
-    logging_config.py      Logging setup (format with filename and line number)
-  tests/
-    test_acceptance.py     Acceptance tests (from product spec)
-    test_integration.py    Integration tests (from architecture doc)
-    test_unit.py           Unit tests (env var validation)
-  eval/
-    eval_cases.py          Eval case definitions (quality probes)
-    eval_scoring.py        Heuristic scoring functions
-    eval_judge.py          LLM-as-judge scoring logic
-    run_evals.py           Eval runner (pytest entry point)
-    conftest.py            Eval pytest config and mock setup
-infra/
-  Dockerfile               Docker image for CLI + Agent Core
-  requirements.txt         Python dependencies
-  run.sh                   Build, test, and run script
-  test.sh                  Run tests with optional mock flags
-  eval.sh                  Run evals with optional mock flags
+docs/                  Product spec and architecture documents
+agent/src/             CLI entry point, agent core (agent.py), system prompt
+agent/tests/           Acceptance, integration, and unit tests; shared mock data
+agent/eval/            Quality evals (heuristic + LLM-as-judge scoring)
+infra/                 Dockerfile, requirements, run/test/eval scripts
 ```
 
 The MCP servers are external to this repo — HealthyLinkx is deployed from its own repo, Tavily is a third-party package. The agent only needs their connection configuration.
