@@ -5,7 +5,7 @@ import os
 
 from langchain_aws import ChatBedrockConverse
 
-JUDGE_MODEL_ID = "us.anthropic.claude-opus-4-8-v1:0"
+JUDGE_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 
 JUDGE_SYSTEM_PROMPT = """\
 You are an expert evaluator for a healthcare Q&A agent. \

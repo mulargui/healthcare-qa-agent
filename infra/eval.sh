@@ -66,5 +66,6 @@ docker run --rm \
     -e AWS_DEFAULT_REGION \
     -e TAVILY_API_KEY \
     -e HEALTHYLINKX_MCP_URL \
+    -v "$PROJECT_DIR/agent/eval:/output" \
     --entrypoint pytest \
     "$IMAGE_NAME" eval/run_evals.py -v "$@"

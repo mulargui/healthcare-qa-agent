@@ -14,7 +14,7 @@ from eval_cases import EVAL_CASES
 from eval_scoring import run_heuristics
 from eval_judge import judge_response, JUDGE_MODEL_ID
 
-EVAL_OUTPUT = "eval_results.json"
+EVAL_OUTPUT = "/output/eval_results.json"
 
 _eval_results = []
 
