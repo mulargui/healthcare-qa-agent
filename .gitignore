@@ -206,6 +206,10 @@ tempCodeRunnerFile.py
 # Eval output
 eval_results.json
 
+# Logs
+logs/*
+!logs/.gitkeep
+
 # Ruff stuff:
 .ruff_cache/
 
