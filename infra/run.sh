@@ -31,6 +31,10 @@ if ! docker image inspect "$IMAGE_NAME" > /dev/null 2>&1; then
         "$IMAGE_NAME" tests/ -v --mock-healthylinkx --mock-tavily --mock-bedrock
 fi
 
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_FILE="$PROJECT_DIR/logs/agent_$TIMESTAMP.log"
+echo "Logging to $LOG_FILE"
+
 # Run the agent — interactive mode (no args) or single-question mode (with args)
 echo "Running agent..."
 if [ $# -eq 0 ]; then
@@ -40,7 +44,7 @@ if [ $# -eq 0 ]; then
         -e AWS_DEFAULT_REGION \
         -e TAVILY_API_KEY \
         -e HEALTHYLINKX_MCP_URL \
-        "$IMAGE_NAME"
+        "$IMAGE_NAME" 2>"$LOG_FILE"
 else
     docker run --rm \
         -e AWS_ACCESS_KEY_ID \
@@ -48,5 +52,5 @@ else
         -e AWS_DEFAULT_REGION \
         -e TAVILY_API_KEY \
         -e HEALTHYLINKX_MCP_URL \
-        "$IMAGE_NAME" "$@"
+        "$IMAGE_NAME" "$@" 2>"$LOG_FILE"
 fi

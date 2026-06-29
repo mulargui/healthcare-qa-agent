@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run tests for the Healthcare Q&A Agent with optional mocking of external services.
 
-set -e
+set -eo pipefail
 
 IMAGE_NAME="healthcare-agent"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -60,6 +60,10 @@ if [ ${#missing[@]} -gt 0 ]; then
     exit 1
 fi
 
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+LOG_FILE="$PROJECT_DIR/logs/test_$TIMESTAMP.log"
+echo "Logging to $LOG_FILE"
+
 echo "Running tests..."
 docker run --rm \
     -e AWS_ACCESS_KEY_ID \
@@ -68,4 +72,4 @@ docker run --rm \
     -e TAVILY_API_KEY \
     -e HEALTHYLINKX_MCP_URL \
     --entrypoint pytest \
-    "$IMAGE_NAME" tests/ -v "$@"
+    "$IMAGE_NAME" tests/ -v "$@" | tee "$LOG_FILE"
