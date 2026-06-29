@@ -73,3 +73,5 @@ docker run --rm \
     -e HEALTHYLINKX_MCP_URL \
     --entrypoint pytest \
     "$IMAGE_NAME" tests/ -v "$@" | tee "$LOG_FILE"
+
+echo "Last results saved to: $LOG_FILE"

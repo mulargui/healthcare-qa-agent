@@ -66,3 +66,6 @@ docker run --rm \
     -v "$PROJECT_DIR/logs:/output" \
     --entrypoint pytest \
     "$IMAGE_NAME" eval/run_evals.py -v "$@"
+
+LATEST=$(ls -t "$PROJECT_DIR/logs"/eval_results_*.json 2>/dev/null | head -1)
+[ -n "$LATEST" ] && echo "Last results saved to: $LATEST"
