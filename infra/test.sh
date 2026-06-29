@@ -36,11 +36,8 @@ for arg in "$@"; do
     esac
 done
 
-# Build image if it doesn't exist
-if ! docker image inspect "$IMAGE_NAME" > /dev/null 2>&1; then
-    echo "Building Docker image..."
-    docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$PROJECT_DIR"
-fi
+echo "Building Docker image..."
+docker build -t "$IMAGE_NAME" -f "$SCRIPT_DIR/Dockerfile" "$PROJECT_DIR"
 
 # Validate env vars for live (non-mocked) services
 mock_args="$*"
