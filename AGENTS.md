@@ -23,12 +23,13 @@ Healthcare Q&A Agent — an interactive CLI tool that answers health questions a
 - Conversation history via LangGraph's `MemorySaver` checkpointer (no truncation in v1 — known limitation)
 - Two CLI modes: interactive prompt loop (no argument) and single-question (with argument, backwards compatible)
 - Agent may proactively recommend doctors when clinically appropriate
+- Runtime environment controlled by `APP_ENV` (`production` / `development` / `test`); model selection and log level vary by environment — see `agent/src/config.py`
 
 ## Repo Layout
 
 ```
 docs/                  Product spec and architecture documents
-agent/src/             CLI entry point, agent core (agent.py), system prompt
+agent/src/             CLI entry point, agent core (agent.py), system prompt, runtime config (config.py)
 agent/tests/           Acceptance, integration, and unit tests; shared mock data
 agent/eval/            Quality evals (heuristic + LLM-as-judge scoring)
 infra/                 Dockerfile, requirements, run/test/eval scripts

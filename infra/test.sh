@@ -71,6 +71,7 @@ docker run --rm \
     -e AWS_DEFAULT_REGION \
     -e TAVILY_API_KEY \
     -e HEALTHYLINKX_MCP_URL \
+    -e APP_ENV=test \
     --entrypoint pytest \
     "$IMAGE_NAME" tests/ -v "$@" | tee "$LOG_FILE"
 

@@ -1,10 +1,11 @@
-"""Unit tests — validates agent input validation logic."""
+"""Unit tests — validates agent input validation logic and config module."""
 
 import asyncio
 
 import pytest
 
 from agent import run_agent
+from config import IS_PRODUCTION, _resolve_env
 
 
 class TestEnvVarValidation:
@@ -33,3 +34,32 @@ class TestEnvVarValidation:
         monkeypatch.setenv("TAVILY_API_KEY", "")
         with pytest.raises(RuntimeError, match="TAVILY_API_KEY"):
             asyncio.run(run_agent("test question"))
+
+
+class TestConfig:
+    def test_default_when_unset(self):
+        assert _resolve_env(None) == "development"
+
+    def test_default_when_empty(self):
+        assert _resolve_env("") == "development"
+
+    def test_production(self):
+        assert _resolve_env("production") == "production"
+
+    def test_development(self):
+        assert _resolve_env("development") == "development"
+
+    def test_test(self):
+        assert _resolve_env("test") == "test"
+
+    def test_case_insensitive(self):
+        assert _resolve_env("Production") == "production"
+        assert _resolve_env("TEST") == "test"
+
+    def test_invalid_falls_back_to_development(self):
+        assert _resolve_env("staging") == "development"
+        assert _resolve_env("PROD") == "development"
+
+    def test_is_production_false_in_test_env(self):
+        # test.sh injects APP_ENV=test, so IS_PRODUCTION must be False
+        assert IS_PRODUCTION is False

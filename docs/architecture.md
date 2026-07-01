@@ -72,7 +72,7 @@ Sends the user's question and conversation history to Claude on AWS Bedrock. All
 
 Claude handles reasoning: understanding the user's question, deciding which tools to invoke, interpreting results, and composing the final answer.
 
-- Model: `us.anthropic.claude-sonnet-4-5-20250929-v1:0` (Bedrock cross-region inference)
+- Model: Sonnet 4.5 (`us.anthropic.claude-sonnet-4-5-20250929-v1:0`) in production; Haiku 4.5 (`us.anthropic.claude-haiku-4-5-20251001`) in dev/test. Selected at startup by `config.py` based on `APP_ENV`.
 - System prompt instructs Claude to:
   - Answer health questions using its knowledge and web search
   - Determine the appropriate specialist type from symptoms
@@ -104,7 +104,7 @@ Searches the HealthyLinkx directory for doctors matching specialty and location.
 
 ```
 docs/                  Product spec and architecture documents
-agent/src/             CLI entry point, agent core (agent.py), system prompt
+agent/src/             CLI entry point, agent core (agent.py), system prompt, runtime config (config.py)
 agent/tests/           Acceptance, integration, and unit tests; shared mock data
 agent/eval/            Quality evals (heuristic + LLM-as-judge scoring)
 infra/                 Dockerfile, requirements, run/test/eval scripts
@@ -136,6 +136,19 @@ Local machine                    AWS / External
 - Web search and doctor background lookups go through the Tavily MCP server
 
 Both MCP servers are external to this repo and assumed to be already deployed. The agent only needs their connection URLs.
+
+## Environment Configuration
+
+Runtime behaviour is controlled by the `APP_ENV` environment variable (values: `production`, `development`, `test`; default: `development`). All environment-driven constants live in `agent/src/config.py`.
+
+| APP_ENV | Log level | Agent model | Judge model |
+|---|---|---|---|
+| production | INFO | Sonnet 4.5 | Opus 4.6 |
+| development / test | DEBUG | Haiku 4.5 | Sonnet 4.5 |
+
+`APP_ENV` is injected by the infra scripts:
+- `run.sh` — passes the host's `APP_ENV` value through to the container (set by the deployment pipeline)
+- `test.sh` / `eval.sh` — hardcode `APP_ENV=test`
 
 ## Tech Stack
 
@@ -216,8 +229,8 @@ Evals score response quality beyond binary pass/fail. They run the agent with co
 - **Combined score** — 20% heuristic + 80% judge, on a 1–5 scale
 
 **Models:**
-- Eval model: `BEDROCK_MODEL_ID` from `agent.py` (the model being evaluated)
-- Judge model: `JUDGE_MODEL_ID` in `eval_judge.py` (a different model to avoid self-judging)
+- Eval model: `AGENT_MODEL_ID` from `config.py` (Sonnet 4.5 in prod, Haiku 4.5 in dev/test)
+- Judge model: `JUDGE_MODEL_ID` from `config.py` (Opus 4.6 in prod, Sonnet 4.5 in dev/test — a different model to avoid self-judging)
 
 **Running evals:**
 

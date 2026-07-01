@@ -12,7 +12,8 @@ import agent
 from conftest import get_mock_tools
 from eval_cases import EVAL_CASES
 from eval_scoring import run_heuristics
-from eval_judge import judge_response, JUDGE_MODEL_ID
+from eval_judge import judge_response
+from config import AGENT_MODEL_ID, JUDGE_MODEL_ID
 
 EVAL_OUTPUT = f"/output/eval_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
@@ -33,7 +34,7 @@ def eval_report():
     report = {
         "run_metadata": {
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "eval_model": agent.BEDROCK_MODEL_ID,
+            "eval_model": AGENT_MODEL_ID,
             "judge_model": JUDGE_MODEL_ID,
             "total_cases": len(_eval_results),
         },

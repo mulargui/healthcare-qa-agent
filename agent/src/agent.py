@@ -10,10 +10,9 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from prompts import SYSTEM_PROMPT
 from logging_config import get_logger, AgentLoggingCallback
+from config import AGENT_MODEL_ID, AWS_REGION
 
 logger = get_logger(__name__)
-
-BEDROCK_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 
 
 def _validate_env():
@@ -73,9 +72,8 @@ async def agent_session(tools_override=None, llm_override=None):
         llm = llm_override
         logger.info("Using overridden LLM")
     else:
-        region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
-        logger.info("Creating LLM: %s in %s", BEDROCK_MODEL_ID, region)
-        llm = ChatBedrockConverse(model=BEDROCK_MODEL_ID, region_name=region)
+        logger.info("Creating LLM: %s in %s", AGENT_MODEL_ID, AWS_REGION)
+        llm = ChatBedrockConverse(model=AGENT_MODEL_ID, region_name=AWS_REGION)
 
     checkpointer = MemorySaver()
     agent = create_react_agent(llm, tools, prompt=SYSTEM_PROMPT, checkpointer=checkpointer)

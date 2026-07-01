@@ -28,6 +28,7 @@ if ! docker image inspect "$IMAGE_NAME" > /dev/null 2>&1; then
     echo "Running tests (mocked)..."
     docker run --rm \
         --entrypoint pytest \
+        -e APP_ENV=test \
         "$IMAGE_NAME" tests/ -v --mock-healthylinkx --mock-tavily --mock-bedrock
 fi
 
@@ -44,6 +45,7 @@ if [ $# -eq 0 ]; then
         -e AWS_DEFAULT_REGION \
         -e TAVILY_API_KEY \
         -e HEALTHYLINKX_MCP_URL \
+        -e APP_ENV \
         "$IMAGE_NAME" 2>"$LOG_FILE"
 else
     docker run --rm \
@@ -52,5 +54,6 @@ else
         -e AWS_DEFAULT_REGION \
         -e TAVILY_API_KEY \
         -e HEALTHYLINKX_MCP_URL \
+        -e APP_ENV \
         "$IMAGE_NAME" "$@" 2>"$LOG_FILE"
 fi

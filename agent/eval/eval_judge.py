@@ -1,11 +1,10 @@
 """LLM-as-judge — scores agent responses using a separate Claude model."""
 
 import json
-import os
 
 from langchain_aws import ChatBedrockConverse
 
-JUDGE_MODEL_ID = "us.anthropic.claude-opus-4-6-v1"
+from config import JUDGE_MODEL_ID, AWS_REGION
 
 JUDGE_SYSTEM_PROMPT = """\
 You are an expert evaluator for a healthcare Q&A agent. \
@@ -65,8 +64,7 @@ async def judge_response(question: str, response: str, judge_criteria: dict) -> 
     Returns:
         {"scores": {"dim": {"score": int, "justification": str}}, "average_score": float, "raw_output": str}
     """
-    region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
-    llm = ChatBedrockConverse(model=JUDGE_MODEL_ID, region_name=region)
+    llm = ChatBedrockConverse(model=JUDGE_MODEL_ID, region_name=AWS_REGION)
 
     user_message = JUDGE_USER_TEMPLATE.format(
         question=question,

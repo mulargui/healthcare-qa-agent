@@ -4,9 +4,13 @@ import logging
 
 from langchain_core.callbacks import BaseCallbackHandler
 
+from config import IS_PRODUCTION
+
 LOG_FORMAT = "%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(message)s"
 
-logging.basicConfig(format=LOG_FORMAT, level=logging.INFO)
+_LOG_LEVEL = logging.INFO if IS_PRODUCTION else logging.DEBUG
+logging.basicConfig(format=LOG_FORMAT, level=_LOG_LEVEL)
+logging.getLogger().setLevel(_LOG_LEVEL)
 
 _logger = logging.getLogger("agent_callback")
 
